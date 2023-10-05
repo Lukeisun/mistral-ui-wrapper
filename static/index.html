@@ -1,0 +1,14 @@
+<html>
+	<head>
+		<title>Home</title>
+		<link rel="stylesheet" href="static/style.css">
+		<script src="static/htmx.min.js"></script>
+	</head>	
+	<body>
+		<form hx-post="/request" hx-target="#content" hx-swap="innerHTML">
+			<input type="text" name="entry" id="entry"></input>
+			<input type="submit" value="Submit"></input>
+			<div id="content"><input name="context" class="context"/></div>
+		</form>
+	</body>
+</html>
