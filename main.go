@@ -15,14 +15,15 @@ import (
 	"github.com/labstack/echo/v4"
 )
 
-func get_response(message string, currentContext string) string {
+func get_response(message string, contextCookie *http.Cookie) (string, *http.Cookie) {
 	request_url := "http://localhost:11434/api/generate"
 	var jsonBytes []byte
 	msg := strings.ReplaceAll(message, "\"", "")
+	currentContext := contextCookie.Value
 	if currentContext == "" {
 		jsonBytes = []byte(`{"model":"mistral", "prompt":"` + msg + `"}`)
 	} else {
-		jsonBytes = []byte(`{"model":"mistral", "prompt":"` + msg + `", "context":[` + currentContext + `]}`)
+		jsonBytes = []byte(`{"model":"mistral", "prompt":"` + msg + `", "context":` + currentContext + `}`)
 	}
 
 	fmt.Println(string(jsonBytes))
@@ -57,14 +58,18 @@ func get_response(message string, currentContext string) string {
 			}
 		}
 	}
-	chatCtxString := strings.Trim(strings.Join(strings.Split(fmt.Sprint(chatContext), " "), ","), "[]")
-	var bytes bytes.Buffer
-	paragraph := strings.Join(ret_arr, "")
-	err = postReply(paragraph, chatCtxString).Render(context.Background(), &bytes)
+	stringifiedCookie, err := json.Marshal(chatContext)
 	if err != nil {
 		log.Fatal(err)
 	}
-	return bytes.String()
+	contextCookie.Value = string(stringifiedCookie)
+	var bytes bytes.Buffer
+	paragraph := strings.Join(ret_arr, "")
+	err = postReply(paragraph).Render(context.Background(), &bytes)
+	if err != nil {
+		log.Fatal(err)
+	}
+	return bytes.String(), contextCookie
 }
 func main() {
 	e := echo.New()
@@ -72,8 +77,13 @@ func main() {
 	e.Static("/static", "static")
 	e.POST("/request", func(c echo.Context) error {
 		message := c.FormValue("entry")
-		currentContext := c.FormValue("context")
-		chatReply := get_response(message, currentContext)
+		currentContext, err := c.Cookie("context")
+		if err != nil {
+			currentContext = new(http.Cookie)
+			currentContext.Name = "context"
+		}
+		chatReply, cookie := get_response(message, currentContext)
+		c.SetCookie(cookie)
 		return c.HTML(http.StatusOK, chatReply)
 	})
 	e.GET("/", func(c echo.Context) error {

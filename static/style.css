@@ -1,7 +1,14 @@
-.context {
-	display: none;
+body, html {
+	background-color: #323232;
 }
 form {
 	margin: 0 auto;
 	width: 300px;
+}
+#content {
+	margin: 0 auto;
+	width: 600px;
+}
+button {
+	margin: 0 auto;
 }

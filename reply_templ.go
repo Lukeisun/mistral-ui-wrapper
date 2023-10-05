@@ -9,7 +9,7 @@ import "context"
 import "io"
 import "bytes"
 
-func postReply(message string, chatContext string) templ.Component {
+func postReply(message string) templ.Component {
 	return templ.ComponentFunc(func(ctx context.Context, w io.Writer) (err error) {
 		templBuffer, templIsBuffer := w.(*bytes.Buffer)
 		if !templIsBuffer {
@@ -31,15 +31,7 @@ func postReply(message string, chatContext string) templ.Component {
 		if err != nil {
 			return err
 		}
-		_, err = templBuffer.WriteString("</div><input name=\"context\" class=\"context\" value=\"")
-		if err != nil {
-			return err
-		}
-		_, err = templBuffer.WriteString(templ.EscapeString(chatContext))
-		if err != nil {
-			return err
-		}
-		_, err = templBuffer.WriteString("\">")
+		_, err = templBuffer.WriteString("</div>")
 		if err != nil {
 			return err
 		}
