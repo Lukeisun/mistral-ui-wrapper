@@ -1,6 +1,9 @@
 body, html {
 	background-color: #323232;
 }
+.context {
+	display: none;
+}
 form {
 	margin: 0 auto;
 	width: 300px;

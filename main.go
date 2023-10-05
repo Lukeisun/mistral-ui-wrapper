@@ -15,15 +15,13 @@ import (
 	"github.com/labstack/echo/v4"
 )
 
-func get_response(message string, contextCookie *http.Cookie) (string, *http.Cookie) {
+func get_response(message, currentContext string) string {
 	request_url := "http://localhost:11434/api/generate"
 	var jsonBytes []byte
-	msg := strings.ReplaceAll(message, "\"", "")
-	currentContext := contextCookie.Value
 	if currentContext == "" {
-		jsonBytes = []byte(`{"model":"mistral", "prompt":"` + msg + `"}`)
+		jsonBytes = []byte(`{"model":"mistral", "prompt":"` + message + `"}`)
 	} else {
-		jsonBytes = []byte(`{"model":"mistral", "prompt":"` + msg + `", "context":` + currentContext + `}`)
+		jsonBytes = []byte(`{"model":"mistral", "prompt":"` + message + `", "context":` + currentContext + `}`)
 	}
 
 	fmt.Println(string(jsonBytes))
@@ -58,19 +56,18 @@ func get_response(message string, contextCookie *http.Cookie) (string, *http.Coo
 			}
 		}
 	}
-	stringifiedCookie, err := json.Marshal(chatContext)
-
+	// build context for next request
+	chatContextBytes, err := json.Marshal(chatContext)
 	if err != nil {
 		log.Fatal(err)
 	}
-	contextCookie.Value = string(stringifiedCookie)
 	var bytes bytes.Buffer
 	paragraph := strings.Join(ret_arr, "")
-	err = postReply(paragraph).Render(context.Background(), &bytes)
+	err = postReply(paragraph, string(chatContextBytes)).Render(context.Background(), &bytes)
 	if err != nil {
 		log.Fatal(err)
 	}
-	return bytes.String(), contextCookie
+	return bytes.String()
 }
 func main() {
 	e := echo.New()
@@ -78,13 +75,8 @@ func main() {
 	e.Static("/static", "static")
 	e.POST("/request", func(c echo.Context) error {
 		message := c.FormValue("entry")
-		currentContext, err := c.Cookie("context")
-		if err != nil {
-			currentContext = new(http.Cookie)
-			currentContext.Name = "context"
-		}
-		chatReply, cookie := get_response(message, currentContext)
-		c.SetCookie(cookie)
+		currentContext := c.FormValue("context")
+		chatReply := get_response(message, currentContext)
 		return c.HTML(http.StatusOK, chatReply)
 	})
 	e.GET("/", func(c echo.Context) error {

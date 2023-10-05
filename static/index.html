@@ -6,16 +6,9 @@
 	</head>	
 	<body>
 	<div id="content"></div>
-		<script>
-			function clearCookie() {
-				console.log("Clearing context");
-				document.cookie = "context=; Path=/; Domain="+location.host.split(":")[0] +"; Expires=Thu, 01 Jan 1970 00:00:01 GMT; SameSite=None; Secure"
-			};
-		</script>
-		<form hx-post="/request" hx-target="#content" hx-swap="innerHTML">
+		<form hx-post="/request" hx-include="[name='context']" hx-target="#content" >
 			<input type="text" name="entry" id="entry"></input>
 			<input type="submit" value="Submit"></input>
 		</form>
-		<button onclick="clearCookie()">Clear Context</button>
 	</body>
 </html>

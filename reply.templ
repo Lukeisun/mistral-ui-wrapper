@@ -2,11 +2,12 @@ package main
 
 import "strings"
 
-templ postReply(message string) {
+templ postReply(message, contextArr string) {
 	<div class="bot-message">
 		for _, line := range strings.Split(message, "\n") {
 			<p>{ line }</p>
 		}
+		<input name="context" class="context" value={ contextArr }/>
 	</div>
 }
 
