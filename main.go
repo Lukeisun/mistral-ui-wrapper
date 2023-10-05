@@ -59,6 +59,7 @@ func get_response(message string, contextCookie *http.Cookie) (string, *http.Coo
 		}
 	}
 	stringifiedCookie, err := json.Marshal(chatContext)
+
 	if err != nil {
 		log.Fatal(err)
 	}

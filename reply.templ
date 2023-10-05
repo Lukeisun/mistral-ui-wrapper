@@ -1,8 +1,12 @@
 package main
 
+import "strings"
+
 templ postReply(message string) {
 	<div class="bot-message">
-		{ message }
+		for _, line := range strings.Split(message, "\n") {
+			<p>{ line }</p>
+		}
 	</div>
 }
 

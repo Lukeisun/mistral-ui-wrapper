@@ -9,6 +9,8 @@ import "context"
 import "io"
 import "bytes"
 
+import "strings"
+
 func postReply(message string) templ.Component {
 	return templ.ComponentFunc(func(ctx context.Context, w io.Writer) (err error) {
 		templBuffer, templIsBuffer := w.(*bytes.Buffer)
@@ -26,10 +28,20 @@ func postReply(message string) templ.Component {
 		if err != nil {
 			return err
 		}
-		var var_2 string = message
-		_, err = templBuffer.WriteString(templ.EscapeString(var_2))
-		if err != nil {
-			return err
+		for _, line := range strings.Split(message, "\n") {
+			_, err = templBuffer.WriteString("<p>")
+			if err != nil {
+				return err
+			}
+			var var_2 string = line
+			_, err = templBuffer.WriteString(templ.EscapeString(var_2))
+			if err != nil {
+				return err
+			}
+			_, err = templBuffer.WriteString("</p>")
+			if err != nil {
+				return err
+			}
 		}
 		_, err = templBuffer.WriteString("</div>")
 		if err != nil {
