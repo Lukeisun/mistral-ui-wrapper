@@ -11,6 +11,9 @@ import "bytes"
 
 import "strings"
 
+// Debug thign
+// <input hx-ext="debug" hx-swap-oob="outerHTML:#test" name="context" class="context" value={ contextArr }/>
+
 func postReply(message, contextArr string) templ.Component {
 	return templ.ComponentFunc(func(ctx context.Context, w io.Writer) (err error) {
 		templBuffer, templIsBuffer := w.(*bytes.Buffer)
@@ -24,7 +27,15 @@ func postReply(message, contextArr string) templ.Component {
 			var_1 = templ.NopComponent
 		}
 		ctx = templ.ClearChildren(ctx)
-		_, err = templBuffer.WriteString("<div class=\"bot-message\">")
+		_, err = templBuffer.WriteString("<input id=\"test\" hx-ext=\"debug\" hx-swap-oob=\"outerHTML:#test\" name=\"context\" value=\"")
+		if err != nil {
+			return err
+		}
+		_, err = templBuffer.WriteString(templ.EscapeString(contextArr))
+		if err != nil {
+			return err
+		}
+		_, err = templBuffer.WriteString("\"><div class=\"bot-message\">")
 		if err != nil {
 			return err
 		}
@@ -43,15 +54,7 @@ func postReply(message, contextArr string) templ.Component {
 				return err
 			}
 		}
-		_, err = templBuffer.WriteString("<input name=\"context\" class=\"context\" value=\"")
-		if err != nil {
-			return err
-		}
-		_, err = templBuffer.WriteString(templ.EscapeString(contextArr))
-		if err != nil {
-			return err
-		}
-		_, err = templBuffer.WriteString("\"></div>")
+		_, err = templBuffer.WriteString("</div>")
 		if err != nil {
 			return err
 		}

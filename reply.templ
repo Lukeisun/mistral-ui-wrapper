@@ -1,13 +1,15 @@
 package main
 
 import "strings"
+// Debug thign
+// <input hx-ext="debug" hx-swap-oob="outerHTML:#test" name="context" class="context" value={ contextArr }/>
 
 templ postReply(message, contextArr string) {
+	<input id="test" hx-ext="debug" hx-swap-oob="outerHTML:#test" name="context" value={ contextArr }/>
 	<div class="bot-message">
 		for _, line := range strings.Split(message, "\n") {
 			<p>{ line }</p>
 		}
-		<input name="context" class="context" value={ contextArr }/>
 	</div>
 }
 

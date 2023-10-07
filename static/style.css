@@ -1,7 +1,7 @@
 body, html {
 	background-color: #323232;
 }
-.context {
+#test {
 	display: none;
 }
 form {
@@ -9,6 +9,7 @@ form {
 	width: 300px;
 }
 #content {
+	color: #eee;
 	margin: 0 auto;
 	width: 600px;
 }

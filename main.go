@@ -69,9 +69,10 @@ func get_response(message, currentContext string) string {
 	}
 	return bytes.String()
 }
+
+// TODO: make context so that we refer to the element that is oob.
 func main() {
 	e := echo.New()
-	// keep context somehow
 	e.Static("/static", "static")
 	e.POST("/request", func(c echo.Context) error {
 		message := c.FormValue("entry")
