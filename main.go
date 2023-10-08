@@ -13,18 +13,26 @@ import (
 	"strings"
 
 	"github.com/labstack/echo/v4"
+	"github.com/labstack/echo/v4/middleware"
+	"golang.org/x/net/websocket"
 )
 
-func get_response(message, currentContext string) string {
+func get_response(message string, currentContext []int) string {
 	request_url := "http://localhost:11434/api/generate"
 	var jsonBytes []byte
-	if currentContext == "" {
+	if len(currentContext) == 0 {
 		jsonBytes = []byte(`{"model":"mistral", "prompt":"` + message + `"}`)
 	} else {
-		jsonBytes = []byte(`{"model":"mistral", "prompt":"` + message + `", "context":` + currentContext + `}`)
+		currentContextBytes, err := json.Marshal(currentContext)
+		if err != nil {
+			fmt.Println(err)
+			return get_response(message, []int{})
+		}
+		jsonBytes = []byte(
+			`{"model":"mistral", "prompt":"` + message +
+				`", "context":` + string(currentContextBytes[:]) + `}`,
+		)
 	}
-
-	fmt.Println(string(jsonBytes))
 	resp, err := http.Post(request_url, "application/json", bytes.NewBuffer(jsonBytes))
 	if err != nil {
 		log.Fatal(err)
@@ -63,26 +71,86 @@ func get_response(message, currentContext string) string {
 	}
 	var bytes bytes.Buffer
 	paragraph := strings.Join(ret_arr, "")
-	err = postReply(paragraph, string(chatContextBytes)).Render(context.Background(), &bytes)
+	err = botMessage(paragraph, string(chatContextBytes)).Render(context.Background(), &bytes)
 	if err != nil {
 		log.Fatal(err)
 	}
 	return bytes.String()
 }
 
+type UserRequest struct {
+	Entry   string `json:"entry"`
+	Context []int  `json:"context"`
+}
+
+func wsHandler(c echo.Context) error {
+	websocket.Handler(func(ws *websocket.Conn) {
+		defer ws.Close()
+		for {
+			userJson := ""
+			err := websocket.Message.Receive(ws, &userJson)
+			if err != nil {
+				c.Logger().Error(err)
+				break
+			}
+			var requestJson map[string]interface{}
+			fmt.Println(userJson)
+			err = json.Unmarshal([]byte(userJson), &requestJson)
+			if err != nil {
+				c.Logger().Error(err)
+				break
+			}
+			userMsg := requestJson["entry"].(string)
+			contextJson := requestJson["context"]
+			var currentContextStr string
+			if contextJson == nil {
+				fmt.Println("context is nil")
+				currentContextStr = "[]"
+			} else {
+				currentContextStr = contextJson.(string)
+			}
+			var currentContext []int
+			err = json.Unmarshal([]byte(currentContextStr), &currentContext)
+			if err != nil {
+				c.Logger().Error(err)
+			}
+			var bytes bytes.Buffer
+			err = userMessage(userMsg).Render(context.Background(), &bytes)
+			if err != nil {
+				log.Fatal(err)
+			}
+			userHTML := bytes.String()
+			err = websocket.Message.Send(ws, userHTML)
+			if err != nil {
+				c.Logger().Error(err)
+				break
+			}
+			chatReply := get_response(userMsg, currentContext)
+			err = websocket.Message.Send(ws, chatReply)
+			if err != nil {
+				c.Logger().Error(err)
+			}
+		}
+	}).ServeHTTP(c.Response(), c.Request())
+	return nil
+}
+
 // TODO: make context so that we refer to the element that is oob.
 func main() {
 	e := echo.New()
 	e.Static("/static", "static")
-	e.POST("/request", func(c echo.Context) error {
-		message := c.FormValue("entry")
-		currentContext := c.FormValue("context")
-		chatReply := get_response(message, currentContext)
-		return c.HTML(http.StatusOK, chatReply)
-	})
+	e.Use(middleware.Logger())
+	e.Use(middleware.Recover())
+	// e.POST("/request", func(c echo.Context) error {
+	// 	message := c.FormValue("entry")
+	// 	currentContext := c.FormValue("context")
+	// 	chatReply := get_response(message, currentContext)
+	// 	return c.HTML(http.StatusOK, chatReply)
+	// })
 	e.GET("/", func(c echo.Context) error {
 		return c.File("static/index.html")
 	})
+	e.GET("/ws", wsHandler)
 	fmt.Println("Server started at port 1323")
 	e.Logger.Fatal(e.Start(":1323"))
 }

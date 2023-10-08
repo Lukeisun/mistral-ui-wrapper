@@ -4,16 +4,16 @@
 		<link rel="stylesheet" href="static/style.css">
 		<script src="static/htmx.min.js"></script>
 		<script src="https://unpkg.com/htmx.org/dist/ext/debug.js"></script>
+		<script src="https://unpkg.com/htmx.org/dist/ext/ws.js"></script>
 	</head>	
 	<body>
 	<div id="content"></div>
-		<form hx-post="/request" hx-include="#test" 
-			hx-target="#content" hx-swap="beforeend" >
-		<!-- <form hx-ext="debug" hx-swap="none" hx-post="/request"> -->
-			<input type="text" name="entry" id="entry"></input>
-			<input type="submit" value="Submit"></input>
-		</form>
+		<div hx-ext='ws'  ws-connect='/ws'>
+			<form hx-include="#test" id="form" ws-send>
+				<input type="text" name="entry" id="entry"></input>
+				<input type="submit" value="Submit"></input>
+			</form>
+		</div>
 	</body>
-	<!-- <div id="test"></div> -->
 	<input id="test"/>
 </html>

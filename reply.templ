@@ -4,12 +4,28 @@ import "strings"
 // Debug thign
 // <input hx-ext="debug" hx-swap-oob="outerHTML:#test" name="context" class="context" value={ contextArr }/>
 
-templ postReply(message, contextArr string) {
+templ botMessage(message, contextArr string) {
 	<input id="test" hx-ext="debug" hx-swap-oob="outerHTML:#test" name="context" value={ contextArr }/>
-	<div class="bot-message">
-		for _, line := range strings.Split(message, "\n") {
-			<p>{ line }</p>
-		}
+	<div hx-swap-oob="beforeend:#content">
+		<div class="bot-message">
+			for _, line := range strings.Split(message, "\n") {
+				if line != "" {
+					<p>{ line }</p>
+				}
+			}
+		</div>
+	</div>
+}
+
+templ userMessage(message string) {
+	<div hx-swap-oob="beforeend:#content">
+		<div class="user-message">
+			for _, line := range strings.Split(message, "\n") {
+				if line != "" {
+					<p>{ line }</p>
+				}
+			}
+		</div>
 	</div>
 }
 
