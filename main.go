@@ -12,33 +12,51 @@ import (
 	"net/http"
 	"strings"
 
+	"github.com/gomarkdown/markdown"
+	"github.com/gomarkdown/markdown/html"
+	"github.com/gomarkdown/markdown/parser"
 	"github.com/labstack/echo/v4"
 	"github.com/labstack/echo/v4/middleware"
 	"golang.org/x/net/websocket"
 )
 
+type OllamaBody struct {
+	Model   string `json:"model"`
+	Prompt  string `json:"prompt"`
+	Context *[]int `json:"context,omitempty"`
+}
+
 func get_response(message string, currentContext []int) string {
 	request_url := "http://localhost:11434/api/generate"
-	var jsonBytes []byte
-	if len(currentContext) == 0 {
-		jsonBytes = []byte(`{"model":"mistral", "prompt":"` + message + `"}`)
-	} else {
+	requestBody := OllamaBody{
+		Model:  "mistral",
+		Prompt: message,
+	}
+	if len(currentContext) != 0 {
 		currentContextBytes, err := json.Marshal(currentContext)
 		if err != nil {
 			fmt.Println(err)
 			return get_response(message, []int{})
 		}
-		jsonBytes = []byte(
-			`{"model":"mistral", "prompt":"` + message +
-				`", "context":` + string(currentContextBytes[:]) + `}`,
-		)
+		requestBody.Context = new([]int)
+		err = json.Unmarshal(currentContextBytes, requestBody.Context)
+		if err != nil {
+			fmt.Println(err)
+			return get_response(message, []int{})
+		}
 	}
-	resp, err := http.Post(request_url, "application/json", bytes.NewBuffer(jsonBytes))
+	requestJSON, err := json.Marshal(requestBody)
 	if err != nil {
+		fmt.Println(err)
+	}
+	resp, err := http.Post(request_url, "application/json", bytes.NewBuffer(requestJSON))
+	if err != nil {
+		fmt.Println(err)
 		log.Fatal(err)
 	}
 	defer resp.Body.Close()
 	body, err := io.ReadAll(resp.Body)
+	fmt.Println(string(body))
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -71,7 +89,8 @@ func get_response(message string, currentContext []int) string {
 	}
 	var bytes bytes.Buffer
 	paragraph := strings.Join(ret_arr, "")
-	err = botMessage(paragraph, string(chatContextBytes)).Render(context.Background(), &bytes)
+	x := mdToHTML([]byte(paragraph))
+	err = botMessage(string(x[:]), string(chatContextBytes)).Render(context.Background(), &bytes)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -133,6 +152,20 @@ func wsHandler(c echo.Context) error {
 		}
 	}).ServeHTTP(c.Response(), c.Request())
 	return nil
+}
+
+func mdToHTML(md []byte) []byte {
+	// create markdown parser with extensions
+	extensions := parser.CommonExtensions | parser.AutoHeadingIDs | parser.NoEmptyLineBeforeBlock
+	p := parser.NewWithExtensions(extensions)
+	doc := p.Parse(md)
+
+	// create HTML renderer with extensions
+	htmlFlags := html.CommonFlags | html.HrefTargetBlank
+	opts := html.RendererOptions{Flags: htmlFlags}
+	renderer := html.NewRenderer(opts)
+
+	return markdown.Render(doc, renderer)
 }
 
 // TODO: make context so that we refer to the element that is oob.

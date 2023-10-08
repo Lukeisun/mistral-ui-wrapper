@@ -4,13 +4,21 @@
 		<link rel="stylesheet" href="static/style.css">
 		<script src="static/htmx.min.js"></script>
 		<script src="https://unpkg.com/htmx.org/dist/ext/debug.js"></script>
+		<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/styles/default.min.css">
+		<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/highlight.min.js"></script>
 		<script src="https://unpkg.com/htmx.org/dist/ext/ws.js"></script>
+		<script>
+			document.addEventListener("htmx:wsAfterMessage", function(evt) {
+				hljs.highlightAll();
+				document.getElementById("entry").focus();
+			});
+		</script>
 	</head>	
 	<body>
 	<div id="content"></div>
-		<div hx-ext='ws'  ws-connect='/ws'>
+		<div class="form-container" hx-ext='ws, debug' ws-connect='/ws'>
 			<form hx-include="#test" id="form" ws-send>
-				<input type="text" name="entry" id="entry"></input>
+				<textarea name="entry" id="entry" rows="1" placeholder="Start typing..."></textarea>
 				<input type="submit" value="Submit"></input>
 			</form>
 		</div>
