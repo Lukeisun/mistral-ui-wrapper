@@ -97,11 +97,6 @@ func get_response(message string, currentContext []int) string {
 	return bytes.String()
 }
 
-type UserRequest struct {
-	Entry   string `json:"entry"`
-	Context []int  `json:"context"`
-}
-
 func wsHandler(c echo.Context) error {
 	websocket.Handler(func(ws *websocket.Conn) {
 		defer ws.Close()
@@ -136,7 +131,7 @@ func wsHandler(c echo.Context) error {
 			var bytes bytes.Buffer
 			err = userMessage(userMsg).Render(context.Background(), &bytes)
 			if err != nil {
-				log.Fatal(err)
+				c.Logger().Error(err)
 			}
 			userHTML := bytes.String()
 			err = websocket.Message.Send(ws, userHTML)
@@ -168,22 +163,14 @@ func mdToHTML(md []byte) []byte {
 	return markdown.Render(doc, renderer)
 }
 
-// TODO: make context so that we refer to the element that is oob.
 func main() {
 	e := echo.New()
 	e.Static("/static", "static")
 	e.Use(middleware.Logger())
 	e.Use(middleware.Recover())
-	// e.POST("/request", func(c echo.Context) error {
-	// 	message := c.FormValue("entry")
-	// 	currentContext := c.FormValue("context")
-	// 	chatReply := get_response(message, currentContext)
-	// 	return c.HTML(http.StatusOK, chatReply)
-	// })
 	e.GET("/", func(c echo.Context) error {
 		return c.File("static/index.html")
 	})
 	e.GET("/ws", wsHandler)
-	fmt.Println("Server started at port 1323")
 	e.Logger.Fatal(e.Start(":1323"))
 }
